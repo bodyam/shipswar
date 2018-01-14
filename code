@@ -1,0 +1,224 @@
+#include <iostream> // cin, cout
+#include <clocale>  // поддержка русского языка
+#include <conio.h>  // _getch()
+#include <stdlib.h> // поддержка функции очистки экрана system("cls")
+#include<time.h>
+using namespace std;
+ 
+enum direction{h=0,v=1};    
+class player{
+public:
+    bool defeat_flag;
+    int hits[10][10];
+    int ships[10][10];
+    player(): defeat_flag(false)
+    {};
+    void ships_init();
+    void set(int deck);
+    int place_ship(int s,int c,direction d,int deck);
+    void turn(player& p,int s,int c);
+    void turn(player& p);
+ 
+};
+int m[10]={1,3,2,1,4,2,3,1,1,2};
+int const str=13;
+int const col=29;
+player human;
+player computer;
+char map[str][col]; // двумерный массив для хранения игровой карты
+ 
+ 
+void map_init();
+void show();
+void input(char& , char&);
+int check_end();
+ 
+void player::ships_init(){
+    for (int i=0;i<10;i++){
+        for(int j=0;j<10;j++){
+            ships[i][j]=1;
+            hits[i][j]=0;
+        }
+    }
+    for (int i=0;i<10;i++)
+        set(m[i]);
+}
+ 
+int player::place_ship(int s,int c,direction d,int deck){
+    switch(d){
+        case 0:
+            for (int i=-1;i<2;i++)
+                for (int j=-1;j<deck+2;j++)
+                    if(ships[i][j]==2)
+                        return 1;
+            break;
+        case 1:
+            for (int j=-1;j<2;j++)
+                for (int i=-1;i<deck+2;i++)
+                    if(ships[i][j]==2)
+                        return 1;
+    }
+    return 0;
+ 
+}
+void player::set(int deck){
+    int e,isset=0;
+ while(!isset){
+    int s=rand()%10;
+    int c=rand()%10;
+    direction d=rand()%2;
+    switch(d){
+        case 0:
+            if((c+dec-1)<10){
+            if(ships[s][c+dec-1]==1){
+                e=place_ship(s,c,d,dec);
+                if(e==0){
+                    for (int i=0;i<dec;i++)
+                        ships[s][c+i]=2;
+                    isset=1;
+                }
+            }
+            }break;
+        case 1:
+            if((s+dec-1)<10){
+            if(ships[s+dec-1][c]==1){
+                e=place_ship(s,c,d,dec);
+                if(e==0){
+                    for (int i=0;i<dec;i++)
+                        ships[s+i][c]=2;
+                isset=1;
+                }
+            }
+        }
+    }
+    }
+}
+ 
+ 
+ 
+ 
+ 
+ 
+void player::turn(player& p,int s,int c){
+    if(p.ships[s][c]==2){
+        p.ships[s][c]=3;
+        }
+        hits[s][c]=1;
+ 
+}
+void player::turn(player& p){
+    int e=0;
+    while(!e){
+        int s=rand()%10;
+        int c=rand()%10;
+        if( hits[s][c]==1)
+            e=1;
+    }
+    if(p.ships[s][c]==2){
+        p.ships[s][c]=3;
+        }
+    hits[s][c]=1;
+}
+ 
+int main()
+{
+    int e=0;
+    char s,c;
+    srand(time(NULL));
+    setlocale(LC_CTYPE,"Russian"); // установка русского языка
+    map_init();
+    human.ships_init();
+    computer.ships_init();
+    while(!e){
+        show();
+        input(s,c);
+        human.turn(computer,(int)s,(int)c);
+        computer.turn(human);
+        e=check_end();
+    }
+    _getch();
+    return 0;
+}
+ 
+ 
+ 
+ 
+void show(){
+    system("cls");
+    for(int i=0;i<10;i++)
+        for(int j=0;j<10;j++)
+            map[i+2][j+2]=human.ships[i][j];
+    for(int i=0;i<10;i++)
+        for(int j=0;j<10;j++)
+            map[i+17][j+17]=human.hits[i][j];
+    for(int i=0;i<13;i++){
+        for(int j=0;j<29;j++)
+            cout<<map[i][j];
+        cout<<endl;
+    }
+}
+ 
+ 
+ 
+void input(char& s, char& c){
+    while(1){
+        s=_getch();
+        if(s==27)
+            exit(0);
+        if (s>=0 && s<9)
+            break;
+    }
+        while(1){
+        c=_getch();
+        if(s==27)
+            exit(0);
+        if (c>=0 && c<9)
+            break;
+    }
+}
+int check_end(){
+    if(human.defeat_flag || computer.defeat_flag)
+        return 1;
+    return 0;
+}
+void map_init(){
+    
+    int m[4]={1,12,16,27};
+    char l='A';
+    char n='1';
+ 
+    for(int i=0;i<13;i++){
+        for (int j=0;j<29;j++)
+            map[i][j]=' ';
+}
+ 
+for(int i=2,j=17;i<12,j<27;i++,n++,j++){
+    if(i==11)
+        n='0';
+    map[0][i]=n;
+    map[0][j]=n;
+}
+for(int i=2;i<12;i++,l++){
+    map[i][0]=l;
+    map[i][15]=l;
+}
+for(int j=0,k=0;j<2;j++){
+k=m[j];
+for(int i=1;i<29;i++){
+    if((i==1)||(i==12)||(i==16)||(i==27))
+        map[k][i]='#';
+    else if((i>12)&&(i<16)||(i>27))
+        map[k][i]=' ';
+    else
+        map[k][i]='-';
+        }
+        
+}
+for(int j=0,k=0;j<4;j++){
+k=m[j];
+    for(int i=2;i<12;i++){
+        map[i][k]='|';
+    }
+}
+ 
+}
