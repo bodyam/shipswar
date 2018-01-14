@@ -1,224 +1,437 @@
-#include <iostream> // cin, cout
-#include <clocale>  // поддержка русского языка
-#include <conio.h>  // _getch()
-#include <stdlib.h> // поддержка функции очистки экрана system("cls")
-#include<time.h>
+#include "stdafx.h"
+#include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctime>
+#include <conio.h>
+#include <windows.h>
+#define N 10
+
 using namespace std;
- 
-enum direction{h=0,v=1};    
-class player{
+
+
+char numbers[N] = { '0','1','2','3','4','5','6','7','8','9' };
+const int s = 13, c = 29;
+const char ship = 178;
+const char ship1 = 178;
+const char sea_without_ship = 176;
+enum direction { h, v };
+
+/*
+const int CELL_EMPTY = 0;
+const int CELL_SHIP = 2;
+const int CELL_DEAD_SHIP = 3;
+const int CELL_SHOT = 1;
+const int CELL_O = 8;
+*/
+class player {
 public:
-    bool defeat_flag;
-    int hits[10][10];
-    int ships[10][10];
-    player(): defeat_flag(false)
-    {};
-    void ships_init();
-    void set(int deck);
-    int place_ship(int s,int c,direction d,int deck);
-    void turn(player& p,int s,int c);
-    void turn(player& p);
- 
+  bool defeat;
+  int hits[N][N];
+  int ships[N][N];
+
+  player() : defeat(0) {}
+
+  void ships_init();
+  void set(int deck);
+  int place_ship(int s, int c, direction dir, int deck);
+  void turn(player&, int posX, int posY);
+  void turn(player&);
 };
-int m[10]={1,3,2,1,4,2,3,1,1,2};
-int const str=13;
-int const col=29;
+
 player human;
 player computer;
-char map[str][col]; // двумерный массив для хранения игровой карты
- 
- 
-void map_init();
-void show();
-void input(char& , char&);
-int check_end();
- 
-void player::ships_init(){
-    for (int i=0;i<10;i++){
-        for(int j=0;j<10;j++){
-            ships[i][j]=1;
-            hits[i][j]=0;
-        }
-    }
-    for (int i=0;i<10;i++)
-        set(m[i]);
+
+void map_init(char map[s][c]);
+void ShowMassive(char map[s][c]);
+int InputCOOrd(char&, char&);
+void TestVivid();
+int check_ending();;
+
+char map[s][c] = {
+
+  "  0123456789     0123456789 ",
+  " #----------#   #----------#",
+  "0|          |  0|          |",
+  "1|          |  1|          |",
+  "2|          |  2|          |",
+  "3|          |  3|          |",
+  "4|          |  4|          |",
+  "5|          |  5|          |",
+  "6|          |  6|          |",
+  "7|          |  7|          |",
+  "😳          |  😳          |",
+  "9|          |  9|          |",
+  " #----------#   #----------#"
+};
+
+
+void Color(int n)
+{
+  SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), n);
 }
- 
-int player::place_ship(int s,int c,direction d,int deck){
-    switch(d){
-        case 0:
-            for (int i=-1;i<2;i++)
-                for (int j=-1;j<deck+2;j++)
-                    if(ships[i][j]==2)
-                        return 1;
-            break;
-        case 1:
-            for (int j=-1;j<2;j++)
-                for (int i=-1;i<deck+2;i++)
-                    if(ships[i][j]==2)
-                        return 1;
-    }
-    return 0;
- 
+
+
+void map_init(char map[s][c])
+{
+  for (int i = 0; i < 10; i++)
+  {
+    for (int j = 0; j < 10; j++)
+    {
+      if (human.ships[i][j] == 2)
+        map[i + 2][j + 2] = ship;
+    }
+  }
 }
-void player::set(int deck){
-    int e,isset=0;
- while(!isset){
-    int s=rand()%10;
-    int c=rand()%10;
-    direction d=rand()%2;
-    switch(d){
-        case 0:
-            if((c+dec-1)<10){
-            if(ships[s][c+dec-1]==1){
-                e=place_ship(s,c,d,dec);
-                if(e==0){
-                    for (int i=0;i<dec;i++)
-                        ships[s][c+i]=2;
-                    isset=1;
-                }
-            }
-            }break;
-        case 1:
-            if((s+dec-1)<10){
-            if(ships[s+dec-1][c]==1){
-                e=place_ship(s,c,d,dec);
-                if(e==0){
-                    for (int i=0;i<dec;i++)
-                        ships[s+i][c]=2;
-                isset=1;
-                }
-            }
-        }
-    }
-    }
+
+void ShowMassive(char map[s][c]) {
+  for (int i = 0; i < N; i++) {
+    for (int j = 0; j < N; j++) {
+      if (computer.hits[i][j] == 1 && human.ships[i][j] == 3) {
+        map[i + 2][j + 2] = '#';
+      }
+      else if (computer.hits[i][j] == 1 && human.ships[i][j] != 3) {
+        map[i + 2][j + 2] = 'o';
+      }
+      if (computer.ships[i][j] == 3 && human.hits[i][j] == 1) {
+        map[i + 2][j + 2 + 15] = '#';
+      }
+      else if (computer.ships[i][j] != 3 && human.hits[i][j] == 1) {
+        map[i + 2][j + 2 + 15] = 'o';
+      }
+    }
+  }
+  for (int i = 0; i < s; i++) {
+    for (int j = 0; j < c; j++) {
+      if (map[i][j] == ship) {
+        Color(0x0E);
+        std::cout « map[i][j];
+      }
+      else if (map[i][j] == '#') {
+        Color(0x0C);
+        map[i][j] = ship1;
+        std::cout « map[i][j];
+      }
+      else if (map[i][j] == 'o') {
+        Color(0x09);
+        map[i][j] = sea_without_ship;
+        std::cout « map[i][j];
+      }
+      else {
+        Color(0x0D);
+        std::cout « map[i][j];
+      }
+    }
+    Color(0x0C);
+    std::cout « "\n";
+  }
 }
- 
- 
- 
- 
- 
- 
-void player::turn(player& p,int s,int c){
-    if(p.ships[s][c]==2){
-        p.ships[s][c]=3;
-        }
-        hits[s][c]=1;
- 
+
+int InputCOOrd(char& posX, char& posY)
+{
+  cout « "Enter Coordinates" « endl;
+  Color(0x0B);
+  posX = _getche();
+  int match = 0;
+  for (int i = 0; i < 10; i++)
+    if (numbers[i] == posX)
+    {
+      match = 1;
+      posX = i;
+    }
+  if (match == 0)
+    return 1;
+  std::cout « '-';
+  match = 0;
+  posY = _getche();
+  for (int i = 0; i < 10; i++)
+    if (numbers[i] == posY)
+    {
+      match = 1;
+      posY = i;
+    }
+  if (match == 0)
+    return 1;
+  return 0;
 }
-void player::turn(player& p){
-    int e=0;
-    while(!e){
-        int s=rand()%10;
-        int c=rand()%10;
-        if( hits[s][c]==1)
-            e=1;
-    }
-    if(p.ships[s][c]==2){
-        p.ships[s][c]=3;
-        }
-    hits[s][c]=1;
+
+void TestVivid()
+{
+
+  Color(0x0C);
+  std::cout « std::endl;
+  for (int i = 0; i < 10; i++)
+  {
+    for (int j = 0; j < 10; j++)
+    {
+      std::cout « human.hits[i][j];
+    }
+    std::cout « "  ";
+    for (int j = 0; j < 10; j++)
+    {
+      std::cout « computer.hits[i][j];
+    }
+    std::cout « std::endl;
+  }
+  std::cout « std::endl;
+  for (int i = 0; i < 10; i++)
+  {
+    for (int j = 0; j < 10; j++)
+    {
+      std::cout « human.ships[i][j];
+    }
+    std::cout « "  ";
+    for (int j = 0; j < 10; j++)
+    {
+      std::cout « computer.ships[i][j];
+    }
+    std::cout « std::endl;
+  }
 }
- 
+int check_ending()
+{
+  int flag = 0;
+  int human_flag = 0;
+  int computer_flag = 0;
+  for (int i = 0; i<10; i++)
+  {
+    for (int j = 0; j<10; j++)
+    {
+      if (human.ships[i][j] == 2)
+        human_flag = 1;
+      if (computer.ships[i][j] == 2)
+        computer_flag = 1;
+    }
+  }
+  if (human_flag == 0)
+    flag = 2;
+  if (computer_flag == 0)
+    flag = 1;
+
+  Color(0x0A);
+  cout « " " « endl;
+  if (flag == 1)
+  {
+    std::cout « "YOU WIN!\n";
+    return 2;
+  }
+  if (flag == 2)
+  {
+    std::cout « "COMPUTER WIN!\n";
+    return 2;
+  }
+}
+
+
+void player::ships_init()
+{
+  for (int i = 0; i < 10; i++)
+  {
+    for (int j = 0; j< 10; j++)
+    {
+      ships[i][j] = 1;
+      hits[i][j] = 0;
+    }
+  }
+  set(4); set(3); set(3); set(2); set(2); set(2); set(1); set(1); set(1); set(1);
+}
+
+
+void player::set(int deck)
+{
+  bool isset = 0;
+  int s, c;
+  direction dir;
+  while (isset == 0)
+  {
+    dir = static_cast<direction😠rand() % 2);
+
+    s = rand() % 10;
+    c = rand() % 10;
+    int e = 0;
+    switch (dir)
+    {
+    case h:
+      if (ships[s][c + deck - 1] == 1)
+      {
+        e = place_ship(s, c, dir, deck);
+        if (e == 0)
+        {
+          for (int i = 0; i < deck; i++)
+          {
+            ships[s][c + i] = 2;
+          }
+          isset = 1;
+        }
+      }
+      break;
+    case v:
+      if (ships[s + deck - 1][c] == 1)
+      {
+        e = place_ship(s, c, dir, deck);
+        if (e == 0)
+        {
+          for (int i = 0; i < deck; i++)
+          {
+            ships[s + i][c] = 2;
+          }
+          isset = 1;
+        }
+      }
+      break;
+    }
+  }
+}
+
+int player::place_ship(int s, int c, direction dir, int deck)
+{
+  int place = 0;
+  switch (dir)
+  {
+  case h:
+    if (ships[s - 1][c - 1] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s - 1][c + deck] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s + 1][c - 1] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s + 1][c + deck] == 2)
+    {
+      place = 1;
+    }
+
+    if (ships[s][c - 1] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s][c + deck] == 2)
+    {
+      place = 1;
+    }
+    for (int i = 0; i < deck; i++)
+    {
+      if (ships[s - 1][c + i] == 2)
+      {
+        place = 1;
+      }
+      if (ships[s + 1][c + i] == 2)
+      {
+        place = 1;
+
+      }
+    }
+    break;
+  case v:
+    if (ships[s - 1][c - 1] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s - 1][c + 1] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s + deck][c - 1] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s + deck][c + 1] == 2)
+    {
+      place = 1;
+    }
+
+    if (ships[s - 1][c] == 2)
+    {
+      place = 1;
+    }
+    if (ships[s + deck][c] == 2)
+    {
+      place = 1;
+    }
+    for (int i = 0; i < deck; i++)
+    {
+      if (ships[s + i][c - 1] == 2)
+      {
+        place = 1;
+      }
+      if (ships[s + i][c + 1] == 2)
+      {
+        place = 1;
+      }
+    }
+    break;
+  }
+  return place;
+}
+
+
+void player::turn(player& enemy)
+{
+  srand(static_cast<unsigned int😠time(NULL)));
+  bool flag = 0;
+  while (flag == 0)
+  {
+    int posX = rand() % 10;
+    int posY = rand() % 10;
+    if (hits[posX][posY] != 1)
+    {
+      hits[posX][posY] = 1;
+      flag = 1;
+      if (enemy.ships[posX][posY] == 2)
+      {
+        enemy.ships[posX][posY] = 3;
+
+      }
+    }
+  }
+}
+void player::turn(player& enemy, int posX, int posY)
+{
+  hits[posX][posY] = 1;
+  if (enemy.ships[posX][posY] == 2)
+  {
+    enemy.ships[posX][posY] = 3;
+  }
+
+}
+
 int main()
 {
-    int e=0;
-    char s,c;
-    srand(time(NULL));
-    setlocale(LC_CTYPE,"Russian"); // установка русского языка
-    map_init();
-    human.ships_init();
-    computer.ships_init();
-    while(!e){
-        show();
-        input(s,c);
-        human.turn(computer,(int)s,(int)c);
-        computer.turn(human);
-        e=check_end();
-    }
-    _getch();
-    return 0;
-}
- 
- 
- 
- 
-void show(){
-    system("cls");
-    for(int i=0;i<10;i++)
-        for(int j=0;j<10;j++)
-            map[i+2][j+2]=human.ships[i][j];
-    for(int i=0;i<10;i++)
-        for(int j=0;j<10;j++)
-            map[i+17][j+17]=human.hits[i][j];
-    for(int i=0;i<13;i++){
-        for(int j=0;j<29;j++)
-            cout<<map[i][j];
-        cout<<endl;
-    }
-}
- 
- 
- 
-void input(char& s, char& c){
-    while(1){
-        s=_getch();
-        if(s==27)
-            exit(0);
-        if (s>=0 && s<9)
-            break;
-    }
-        while(1){
-        c=_getch();
-        if(s==27)
-            exit(0);
-        if (c>=0 && c<9)
-            break;
-    }
-}
-int check_end(){
-    if(human.defeat_flag || computer.defeat_flag)
-        return 1;
-    return 0;
-}
-void map_init(){
-    
-    int m[4]={1,12,16,27};
-    char l='A';
-    char n='1';
- 
-    for(int i=0;i<13;i++){
-        for (int j=0;j<29;j++)
-            map[i][j]=' ';
-}
- 
-for(int i=2,j=17;i<12,j<27;i++,n++,j++){
-    if(i==11)
-        n='0';
-    map[0][i]=n;
-    map[0][j]=n;
-}
-for(int i=2;i<12;i++,l++){
-    map[i][0]=l;
-    map[i][15]=l;
-}
-for(int j=0,k=0;j<2;j++){
-k=m[j];
-for(int i=1;i<29;i++){
-    if((i==1)||(i==12)||(i==16)||(i==27))
-        map[k][i]='#';
-    else if((i>12)&&(i<16)||(i>27))
-        map[k][i]=' ';
-    else
-        map[k][i]='-';
-        }
-        
-}
-for(int j=0,k=0;j<4;j++){
-k=m[j];
-    for(int i=2;i<12;i++){
-        map[i][k]='|';
-    }
-}
- 
+  int message = 0;
+  srand(static_cast<unsigned int😠time(NULL)));
+
+  human.ships_init();
+  computer.ships_init();
+  map_init(map);
+
+  //0 +; 1 - ; 2 end;
+
+  while (message != 2)
+  {
+    int user_input = 0;
+    system("cls");
+    ShowMassive(map);
+    if (message == 1)
+      message = 0;
+    //TestVivod();
+
+    char posX, posY;
+    user_input = InputCOOrd(posX, posY);
+    if (user_input == 1)
+    {
+      message = 1;
+      continue;
+    }
+
+    human.turn(computer, posX, posY);
+    computer.turn(human);
+    message = check_ending();
+  }
+  _getch();
+  return 0;
 }
